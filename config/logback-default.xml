@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder class="net.logstash.logback.encoder.LogstashEncoder">
+			<customFields>{"app_name":"crawler","log_type":"app"}</customFields>
+			<timeZone>UTC</timeZone>
+
+		</encoder>
+	</appender>
+
+	<appender name="dailyRollingFileAppender"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<File>logs/crawler.log</File>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<!-- daily rollover -->
+			<FileNamePattern>logs/crawler.%d{dd-MM-yyyy}.log</FileNamePattern>
+
+			<!-- keep 15 days' worth of history -->
+			<maxHistory>15</maxHistory>
+		</rollingPolicy>
+		<encoder class="net.logstash.logback.encoder.LogstashEncoder">
+			<customFields>{"app_name":"crawler","log_type":"app"}</customFields>
+			<timeZone>UTC</timeZone>
+
+		</encoder>
+	</appender>
+
+	<logger name="com.example.documentparser" level="INFO" additivity="false">
+		<appender-ref ref="consoleAppender" />
+		<appender-ref ref="dailyRollingFileAppender" />
+	</logger>
+
+	<root level="ERROR">
+		<appender-ref ref="consoleAppender" />
+		<appender-ref ref="dailyRollingFileAppender" />
+	</root>
+
+</configuration>
