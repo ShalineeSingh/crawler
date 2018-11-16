@@ -19,6 +19,7 @@ public class CrawlerController {
 
   @RequestMapping(method = RequestMethod.GET, value = "getCandidateDetails")
   public CandidateDetails crawler(@RequestParam(value = "url") String url) {
+    System.out.print("IN controller");
     return crawlerService.getCandidateDetails(url);
   }
 }
