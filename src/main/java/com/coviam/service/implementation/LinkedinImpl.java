@@ -11,13 +11,12 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Service;
-import static com.coviam.constant.CrawlerConstants.LINKEDIN_LOGIN_PASS;
-import static com.coviam.constant.CrawlerConstants.LINKEDIN_LOGIN_SIGNIN;
-import static com.coviam.constant.CrawlerConstants.LINKEDIN_LOGIN_USERNAME;
 
 @Slf4j
-@Service
+@Service("com.coviam.service.implementation.LinkedinImpl")
+@PropertySource("classpath:linkedin.properties")
 public class LinkedinImpl implements CrawlerService {
 
   @Autowired
@@ -50,6 +49,18 @@ public class LinkedinImpl implements CrawlerService {
   @Value("${dropdown.classname}")
   private String dropdownClassname;
 
+  @Value("${login.usernamekey}")
+  private String loginUsernameKey;
+
+  @Value("${login.passwordkey}")
+  private String loginPasswordKey;
+
+  @Value("${login.signinkey}")
+  private String loginSigninKey;
+
+  @Value("${homepage.url}")
+  private String homepageUrl;
+
   /**
    * getting candidate details from the linkedIn url of the candidate
    * candidate details include : (Personal, Technical, Work, Education) Details
@@ -59,32 +70,44 @@ public class LinkedinImpl implements CrawlerService {
    */
   @Override
   public CandidateDetails getCandidateDetails(String url) {
-    CandidateDetails candidateDetails = new CandidateDetails();
-    long startTime = System.currentTimeMillis();
-    WebDriver webDriver = driver.initializeDriverInstances();
-    long endTime = System.currentTimeMillis();
-    log.debug("Total time: {} taken to initialise driver", endTime - startTime);
+    CandidateDetails candidateDetails = null;
+    WebDriver webDriver = driver.getWebDriver();
     try {
-      startTime = System.currentTimeMillis();
       linkedInlogin(webDriver);
-      endTime = System.currentTimeMillis();
-      log.debug("Total time: {} taken to login", endTime - startTime);
-      long start = System.currentTimeMillis();
-      webDriver.get(url);
-      long end = System.currentTimeMillis();
-      log.debug("Total time: {} to open url: {}", end - start, url);
+      navigateToCandidateUrl(webDriver, url);
+      candidateDetails = setCandidateDetails(url, webDriver);
     } catch (Exception e) {
       log.error("Exception in getCandidateDetails for url: {}", url, e);
     }
-    startTime = System.currentTimeMillis();
+    log.info("Returning candidate details for url: {} to resume_parser service", url);
+    return candidateDetails;
+  }
+
+  /**
+   * Setting candidate details after scraping details from linkedIn Url
+   *
+   * @param url
+   * @param webDriver
+   * @return
+   */
+  private CandidateDetails setCandidateDetails(String url, WebDriver webDriver) {
+    CandidateDetails candidateDetails = new CandidateDetails();
     candidateDetails.setName(getName(webDriver, url));
     candidateDetails.setLocation(getLocation(webDriver, url));
     candidateDetails.setEducationDetails(getEducationDetails(webDriver, url));
     candidateDetails.setWorkDetails(getWorkDetails(webDriver, url));
     candidateDetails.setTechnicalSkills(getTechnicalDetails(webDriver, url));
-    endTime = System.currentTimeMillis();
-    log.debug("Total time: {} to scrap details", endTime - startTime);
     return candidateDetails;
+  }
+
+  /**
+   * navigate to candidate url after successfully login
+   *
+   * @param webDriver
+   * @param url
+   */
+  private void navigateToCandidateUrl(WebDriver webDriver, String url) {
+    webDriver.get(url);
   }
 
   /**
@@ -95,7 +118,7 @@ public class LinkedinImpl implements CrawlerService {
    * @return
    */
   private String getLocation(WebDriver webDriver, String url) {
-    log.debug("Getting location from url: {}", url);
+    log.info("Getting location from url: {}", url);
     String location = null;
     try {
       location = webDriver.findElement(By.className(locationClassname)).getText();
@@ -113,7 +136,7 @@ public class LinkedinImpl implements CrawlerService {
    * @return
    */
   private String getName(WebDriver webDriver, String url) {
-    log.debug("Getting name from url: {}", url);
+    log.info("Getting name from url: {}", url);
     String name = null;
     try {
       name = webDriver.findElement(By.className(nameClassname)).getText();
@@ -130,20 +153,37 @@ public class LinkedinImpl implements CrawlerService {
    * @param driver
    */
   private void linkedInlogin(WebDriver driver) {
-    String currentURL = driver.getCurrentUrl();
     try {
       driver.manage().window().maximize();
       driver.get(baseUrl);
-      driver.findElement(By.name(LINKEDIN_LOGIN_USERNAME)).sendKeys(username);
-      log.debug("Username: {} added", username);
-      driver.findElement(By.name(LINKEDIN_LOGIN_PASS)).sendKeys(password);
-      log.debug("Password: {} added", password);
-      driver.findElement(By.id(LINKEDIN_LOGIN_SIGNIN)).click();
-      log.debug("Login successful. Login url {}", currentURL);
+      driver.findElement(By.name(loginUsernameKey)).sendKeys(username);
+      log.info("Username: {} added", username);
+      driver.findElement(By.name(loginPasswordKey)).sendKeys(password);
+      log.info("Password: {} added", password);
+      driver.findElement(By.id(loginSigninKey)).click();
+      String currentUrl = driver.getCurrentUrl();
+      Boolean isLoginSuccessful = checkLoginIsSuccessful(currentUrl);
+      if (isLoginSuccessful) {
+        log.info("Login successful. for baseUrl: {} - Current url {}", baseUrl, currentUrl);
+      } else {
+        log.debug(
+            "Exception in login with username: {} - password: {} - baseUrl: {} - currentUrl: {}",
+            username, password, baseUrl, currentUrl);
+      }
+
     } catch (Exception e) {
-      log.error("Exception in login method for baseURL: {} for currentURL: {}", baseUrl, currentURL,
-          e);
+      log.error("Exception in login method for baseURL: {}", baseUrl, e);
     }
+  }
+
+  /**
+   * check if login is successful using home page url
+   *
+   * @param currentUrl
+   * @return
+   */
+  private Boolean checkLoginIsSuccessful(String currentUrl) {
+    return currentUrl.equals(homepageUrl);
   }
 
   /**
@@ -155,14 +195,9 @@ public class LinkedinImpl implements CrawlerService {
    * @return
    */
   private List<String> getEducationDetails(WebDriver webDriver, String url) {
-    log.debug("Getting education details from url: {}", url);
+    log.info("Getting education details from url: {}", url);
     List<String> educationDetails = new ArrayList<>();
-    List<WebElement> descendantsEducation = null;
-    try {
-      descendantsEducation = webDriver.findElements(By.className(educationClassname));
-    } catch (Exception e) {
-      log.error("Exception while finding educationDetails for url: {}", url, e);
-    }
+    List<WebElement> descendantsEducation = getEducationWebElements(webDriver, url);
     if (CollectionUtils.isNotEmpty(descendantsEducation)) {
       for (WebElement education : descendantsEducation) {
         educationDetails.add(education.getText());
@@ -171,6 +206,23 @@ public class LinkedinImpl implements CrawlerService {
       log.debug("Education details are not present for url: {}", url);
     }
     return educationDetails;
+  }
+
+  /**
+   * return list of education web elements using education classname
+   *
+   * @param webDriver
+   * @param url
+   * @return
+   */
+  private List<WebElement> getEducationWebElements(WebDriver webDriver, String url) {
+    List<WebElement> descendantsEducation = null;
+    try {
+      descendantsEducation = webDriver.findElements(By.className(educationClassname));
+    } catch (Exception e) {
+      log.error("Exception while finding educationDetails for url: {}", url, e);
+    }
+    return descendantsEducation;
   }
 
   /**
@@ -183,14 +235,9 @@ public class LinkedinImpl implements CrawlerService {
    * @return
    */
   private List<String> getWorkDetails(WebDriver webDriver, String url) {
-    log.debug("Getting work details from url: {}", url);
+    log.info("Getting work details from url: {}", url);
     List<String> workDetails = new ArrayList<>();
-    List<WebElement> descendantsWork = null;
-    try {
-      descendantsWork = webDriver.findElements(By.className(workClassname));
-    } catch (Exception e) {
-      log.error("Exception while finding workDetails for url: {}", url, e);
-    }
+    List<WebElement> descendantsWork = getWorkWebElements(webDriver, url);
     if (CollectionUtils.isNotEmpty(descendantsWork)) {
       for (WebElement work : descendantsWork) {
         workDetails.add(work.getText());
@@ -202,6 +249,23 @@ public class LinkedinImpl implements CrawlerService {
   }
 
   /**
+   * return list of work web elements using work classname
+   *
+   * @param webDriver
+   * @param url
+   * @return
+   */
+  private List<WebElement> getWorkWebElements(WebDriver webDriver, String url) {
+    List<WebElement> descendantsWork = null;
+    try {
+      descendantsWork = webDriver.findElements(By.className(workClassname));
+    } catch (Exception e) {
+      log.error("Exception while finding workDetails for url: {}", url, e);
+    }
+    return descendantsWork;
+  }
+
+  /**
    * scraping technical skills from candidate linkedInUrl
    * eg: C, C++, java
    *
@@ -210,19 +274,9 @@ public class LinkedinImpl implements CrawlerService {
    * @return
    */
   private List<String> getTechnicalDetails(WebDriver webDriver, String url) {
-    log.debug("Getting technical details from url: {}", url);
+    log.info("Getting technical details from url: {}", url);
     List<String> technicalDetails = new ArrayList<>();
-    List<WebElement> descendantsSkills = null;
-    try {
-      webDriver.findElement(By.className(dropdownClassname)).click();
-    } catch (Exception e) {
-      log.error("Exception while clicking skill icon to show all skills", e);
-    }
-    try {
-      descendantsSkills = webDriver.findElements(By.className(technicalClassname));
-    } catch (Exception e) {
-      log.error("Exception while finding skills for url", url, e);
-    }
+    List<WebElement> descendantsSkills = getSkillsWebElements(webDriver, url);
     if (CollectionUtils.isNotEmpty(descendantsSkills)) {
       for (WebElement skill : descendantsSkills) {
         technicalDetails.add(skill.getText());
@@ -231,5 +285,37 @@ public class LinkedinImpl implements CrawlerService {
       log.debug("Technical details are not present for url: {}", url);
     }
     return technicalDetails;
+  }
+
+  /**
+   * return list of skills web elements using skill classname
+   *
+   * @param webDriver
+   * @param url
+   * @return
+   */
+  private List<WebElement> getSkillsWebElements(WebDriver webDriver, String url) {
+    List<WebElement> descendantsSkills = null;
+    openFullSkillsSection(webDriver);
+    try {
+      descendantsSkills = webDriver.findElements(By.className(technicalClassname));
+    } catch (Exception e) {
+      log.error("Exception while finding skills for url", url, e);
+    }
+    return descendantsSkills;
+  }
+
+  /**
+   * click on the button to open full skill section
+   *
+   * @param webDriver
+   */
+  private void openFullSkillsSection(WebDriver webDriver) {
+    try {
+      webDriver.findElement(By.className(dropdownClassname)).click();
+      Thread.sleep(4000);
+    } catch (Exception e) {
+      log.error("Exception while clicking skill icon to show all skills", e);
+    }
   }
 }

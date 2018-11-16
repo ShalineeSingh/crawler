@@ -1,46 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-	<appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">
-		<encoder class="net.logstash.logback.encoder.LogstashAccessEncoder">
-			<customFields>
-				{"app_name":"crawler","log_type":"access"}
-			</customFields>
-			<fieldNames>
-				<fieldsRequestHeaders>@fields.request_headers</fieldsRequestHeaders>
-				<fieldsResponseHeaders>@fields.response_headers
-				</fieldsResponseHeaders>
-			</fieldNames>
-			<lowerCaseHeaderNames>true</lowerCaseHeaderNames>
-			<timeZone>UTC</timeZone>
-		</encoder>
-	</appender>
-	<appender-ref ref="consoleAppender" />
+  <appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="net.logstash.logback.encoder.LogstashAccessEncoder">
+      <customFields>
+        {"app_name":"crawler","log_type":"access"}
+      </customFields>
+      <fieldNames>
+        <fieldsRequestHeaders>@fields.request_headers</fieldsRequestHeaders>
+        <fieldsResponseHeaders>@fields.response_headers
+        </fieldsResponseHeaders>
+      </fieldNames>
+      <lowerCaseHeaderNames>true</lowerCaseHeaderNames>
+      <timeZone>UTC</timeZone>
+    </encoder>
+  </appender>
+  <appender-ref ref="consoleAppender"/>
 
-	<appender name="dailyRollingFileAppender"
-		class="ch.qos.logback.core.rolling.RollingFileAppender">
-		<File>logs/crawler-access.log</File>
-		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-			<!-- daily rollover -->
-			<FileNamePattern>logs/crawler-access.%d{dd-MM-yyyy}.log
-			</FileNamePattern>
+  <appender name="dailyRollingFileAppender"
+            class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <File>logs/crawler-access.log</File>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- daily rollover -->
+      <FileNamePattern>logs/crawler-access.%d{dd-MM-yyyy}.log
+      </FileNamePattern>
 
-			<!-- keep 15 days' worth of history -->
-			<maxHistory>15</maxHistory>
-		</rollingPolicy>
-		<encoder class="net.logstash.logback.encoder.LogstashAccessEncoder">
-			<customFields>
-				{"app_name":"crawler","log_type":"access"}
-			</customFields>
-			<fieldNames>
-				<fieldsRequestHeaders>@fields.request_headers</fieldsRequestHeaders>
-				<fieldsResponseHeaders>@fields.response_headers
-				</fieldsResponseHeaders>
-			</fieldNames>
-			<lowerCaseHeaderNames>true</lowerCaseHeaderNames>
-			<timeZone>UTC</timeZone>
-		</encoder>
-	</appender>
+      <!-- keep 15 days' worth of history -->
+      <maxHistory>15</maxHistory>
+    </rollingPolicy>
+    <encoder class="net.logstash.logback.encoder.LogstashAccessEncoder">
+      <customFields>
+        {"app_name":"crawler","log_type":"access"}
+      </customFields>
+      <fieldNames>
+        <fieldsRequestHeaders>@fields.request_headers</fieldsRequestHeaders>
+        <fieldsResponseHeaders>@fields.response_headers
+        </fieldsResponseHeaders>
+      </fieldNames>
+      <lowerCaseHeaderNames>true</lowerCaseHeaderNames>
+      <timeZone>UTC</timeZone>
+    </encoder>
+  </appender>
 
-	<appender-ref ref="dailyRollingFileAppender" />
+  <appender-ref ref="dailyRollingFileAppender"/>
 
 </configuration>

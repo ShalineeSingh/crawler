@@ -8,10 +8,12 @@ import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.stereotype.Component;
 
 @Slf4j
-@Service
+@Component
+@PropertySource("classpath:linkedin.properties")
 public class Driver {
 
   @Value("${chrome.driver.path}")
@@ -32,6 +34,7 @@ public class Driver {
     options.addArguments("disable-infobars");
     options.addArguments("headless");
     options.addArguments("window-size=1200,1100");
+    options.addExtensions(new File("config/notaRobot.crx"));
     return options;
   }
 
@@ -50,7 +53,7 @@ public class Driver {
    *
    * @return
    */
-  public WebDriver initializeDriverInstances() {
+  public WebDriver getWebDriver() {
     ChromeOptions options = getChromeOptions();
     DesiredCapabilities cap = new DesiredCapabilities();
     options.merge(cap);
