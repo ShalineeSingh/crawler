@@ -1,6 +1,9 @@
 package com.coviam.service.implementation;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
+
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -27,6 +30,8 @@ public class Driver {
    */
   private ChromeOptions getChromeOptions() {
     ChromeOptions options = new ChromeOptions();
+    Map prefs = new HashMap();
+    prefs.put("profile.default_content_settings.cookies", 2);
     options.addArguments("start-maximized");
     options.addArguments("--js-flags=--expose-gc");
     options.addArguments("--enable-precise-memory-info");
@@ -34,6 +39,7 @@ public class Driver {
     options.addArguments("disable-infobars");
     options.addArguments("headless");
     options.addArguments("window-size=1200,1100");
+    options.setExperimentalOption("prefs", prefs);
     options.addExtensions(new File("config/notaRobot.crx"));
     return options;
   }

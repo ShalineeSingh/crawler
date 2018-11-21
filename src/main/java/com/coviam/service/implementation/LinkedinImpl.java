@@ -7,6 +7,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,7 +83,6 @@ public class LinkedinImpl implements CrawlerService {
     log.info("Returning candidate details for url: {} to resume_parser service", url);
     return candidateDetails;
   }
-
   /**
    * Setting candidate details after scraping details from linkedIn Url
    *
@@ -92,6 +92,7 @@ public class LinkedinImpl implements CrawlerService {
    */
   private CandidateDetails setCandidateDetails(String url, WebDriver webDriver) {
     CandidateDetails candidateDetails = new CandidateDetails();
+    ((JavascriptExecutor)webDriver).executeScript("window.scrollTo(0, document.body.scrollHeight)");
     candidateDetails.setName(getName(webDriver, url));
     candidateDetails.setLocation(getLocation(webDriver, url));
     candidateDetails.setEducationDetails(getEducationDetails(webDriver, url));
@@ -152,7 +153,7 @@ public class LinkedinImpl implements CrawlerService {
    *
    * @param driver
    */
-  private void linkedInlogin(WebDriver driver) {
+  public void linkedInlogin(WebDriver driver) {
     try {
       driver.manage().window().maximize();
       driver.get(baseUrl);
